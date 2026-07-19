@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-
+from prompt import prompt
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
@@ -40,9 +40,12 @@ llm = ChatGroq(
 # RAG chain
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
-    retriever=retriever
+    retriever=retriever,
+    chain_type="stuff",
+    chain_type_kwargs={
+        "prompt": prompt
+    }
 )
-
 
 print(
 """
@@ -51,21 +54,22 @@ Type exit to stop
 """
 )
 
-
 while True:
-
     question = input("\nPatient: ")
 
     if question.lower() == "exit":
         break
 
+    docs = retriever.invoke(question)
+
+    print("\nRetrieved Documents:")
+    for i, doc in enumerate(docs, start=1):
+        print(f"\nSource {i}")
+        print(doc.metadata)
+
     answer = qa_chain.invoke(
-        {
-            "query": question
-        }
+        {"query": question}
     )
 
-    print(
-        "\nBot:",
-        answer["result"]
-    )
+    print("\nBot:", answer["result"])
+
